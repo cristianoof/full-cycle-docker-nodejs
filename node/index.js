@@ -14,9 +14,46 @@ const config = {
 const connection = mysql.createConnection(config);
 
 connection.connect((err) => {
-  if (err) console.log(err);
+  if (err) {
+    console.log(err);
+    return;
+  }
   console.log("Connected to MySQL Server!");
+
+  connection.query(`SHOW TABLES LIKE 'people'`, (err, result) => {
+    if (err) {
+      console.log(err);
+      return;
+    }
+
+    if (result.length === 0) {
+      const createTable = `
+        CREATE TABLE people (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          name VARCHAR(255) NOT NULL
+        )
+      `;
+      connection.query(createTable, (err, result) => {
+        if (err) {
+          console.log(err);
+          return;
+        }
+        console.log('Table "people" created successfully');
+        insertRandomName();
+      });
+    } else {
+      insertRandomName();
+    }
+  });
 });
+
+function insertRandomName() {
+  const sql = `INSERT INTO people(name) values('${generateRandomName()}')`;
+  connection.query(sql, (err, result) => {
+    if (err) console.log(err);
+    else console.log("Random name inserted successfully.");
+  });
+}
 
 function generateRandomName() {
   const firstNames = [
@@ -47,22 +84,15 @@ function generateRandomName() {
   const firstNameIndex = Math.floor(Math.random() * firstNames.length);
   const lastNameIndex = Math.floor(Math.random() * lastNames.length);
 
-  return firstNames[firstNameIndex] + " " + lastNames[lastNameIndex];
+  return `${firstNames[firstNameIndex]} ${lastNames[lastNameIndex]}`;
 }
-
-const sql = `INSERT INTO people(name) values('${generateRandomName()}')`;
-connection.query(sql);
 
 function findAllPeople() {
   return new Promise((resolve, reject) => {
     const sqlFindAll = "SELECT * FROM people";
-
     connection.query(sqlFindAll, (err, results) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(results);
-      }
+      if (err) reject(err);
+      else resolve(results);
     });
   });
 }
@@ -81,7 +111,7 @@ app.get("/", (req, res) => {
     })
     .catch((err) => {
       console.log(err);
-      throw new Error(err);
+      res.status(500).send("Error retrieving data");
     });
 });
 

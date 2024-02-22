@@ -16,7 +16,7 @@ services:
 
   app:
     build: ./node
-    command: dockerize -wait tcp://db:3306 -timeout 20s node index.js
+    command: dockerize -wait tcp://db:3306 -timeout 20s sh -c "npm install && node index.js"
     container_name: app
     restart: always
     tty: true
@@ -24,6 +24,8 @@ services:
       - "3000:3000"
     depends_on:
       - db
+    volumes:
+      - ./node:/usr/src/app
     networks:
       - node-network
 
